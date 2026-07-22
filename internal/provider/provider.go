@@ -34,7 +34,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/securityprovider"
 )
 
 const (
@@ -133,11 +132,13 @@ func (p *QuickNodeProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	bearerTokenProvider, _ := securityprovider.NewSecurityProviderBearerToken(apiKey)
 	client, _ := quicknode.NewClientWithResponses(
 		endpoint,
 		quicknode.WithHTTPClient(transport.NewRetryableThrottledClient(requestsPerSecond)),
-		quicknode.WithRequestEditorFn(bearerTokenProvider.Intercept),
+		quicknode.WithRequestEditorFn(func(ctx context.Context, req *http.Request) error {
+			req.Header.Set("x-api-key", apiKey)
+			return nil
+		}),
 	)
 
 	// Create Streams API client with x-api-key authentication

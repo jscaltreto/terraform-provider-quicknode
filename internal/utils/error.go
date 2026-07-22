@@ -28,7 +28,7 @@ const (
 )
 
 type ErrorResponse struct {
-	Error *string `json:"error"`
+	Error json.RawMessage `json:"error"`
 }
 
 func BuildRequestErrorMessage(status string, body []byte) (string, error) {
@@ -41,8 +41,8 @@ func BuildRequestErrorMessage(status string, body []byte) (string, error) {
 			return m, err
 		}
 
-		if e.Error != nil {
-			m += fmt.Sprintf("\nerror `%s`", *e.Error)
+		if len(e.Error) > 0 && string(e.Error) != "null" {
+			m += fmt.Sprintf("\nerror `%s`", e.Error)
 		}
 	}
 
