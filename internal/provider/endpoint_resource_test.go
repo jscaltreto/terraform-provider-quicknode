@@ -297,3 +297,53 @@ func TestMultichainDiff_NullVsFalse(t *testing.T) {
 		t.Fatalf("sanity: Equal() should still distinguish null and false; this test only guards against using Equal() for the diff")
 	}
 }
+
+func strPtr(s string) *string { return &s }
+
+func TestSetUrls(t *testing.T) {
+	tests := map[string]struct {
+		httpUrl string
+		wssUrl  *string
+		wantUrl types.String
+		wantWss types.String
+	}{
+		"http and wss": {
+			httpUrl: "https://example-endpoint.quiknode.pro/abc123/",
+			wssUrl:  strPtr("wss://example-endpoint.quiknode.pro/abc123/"),
+			wantUrl: types.StringValue("https://example-endpoint.quiknode.pro"),
+			wantWss: types.StringValue("wss://example-endpoint.quiknode.pro"),
+		},
+		"nil wss": {
+			httpUrl: "https://example-endpoint.matic.quiknode.pro/abc123/",
+			wssUrl:  nil,
+			wantUrl: types.StringValue("https://example-endpoint.matic.quiknode.pro"),
+			wantWss: types.StringNull(),
+		},
+		"empty wss": {
+			httpUrl: "https://example-endpoint.quiknode.pro/abc123/",
+			wssUrl:  strPtr(""),
+			wantUrl: types.StringValue("https://example-endpoint.quiknode.pro"),
+			wantWss: types.StringNull(),
+		},
+		"unparseable http url": {
+			httpUrl: "not-a-url",
+			wssUrl:  nil,
+			wantUrl: types.StringNull(),
+			wantWss: types.StringNull(),
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			var data EndpointResourceModel
+			data.setUrls(tc.httpUrl, tc.wssUrl)
+
+			if !data.Url.Equal(tc.wantUrl) {
+				t.Errorf("url: got %v, want %v", data.Url, tc.wantUrl)
+			}
+			if !data.WssUrl.Equal(tc.wantWss) {
+				t.Errorf("wss_url: got %v, want %v", data.WssUrl, tc.wantWss)
+			}
+		})
+	}
+}
